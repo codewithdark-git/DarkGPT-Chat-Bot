@@ -1,19 +1,8 @@
-# # Insert a chat message container.
-# import streamlit as st
-# import numpy as np
-#
-# with st.chat_message("user"):
-#    st.write("Hello 👋")
-# st.line_chart(np.random.randn(30, 3))
-#
-# # Display a chat input widget.
-# st.chat_input("Say something")
-
-
 import streamlit as st
 from g4f.client import Client
 import sqlite3
 from undetected_chromedriver import *
+from datetime import datetime
 
 # Create a connection to the database
 conn = sqlite3.connect('chat_history.db')
@@ -22,7 +11,7 @@ c = conn.cursor()
 # Create table if not exists
 try:
     c.execute('''CREATE TABLE IF NOT EXISTS chat_history
-                 (conversation_id INTEGER, role TEXT, content TEXT)''')
+                 (conversation_id INTEGER, role TEXT, content TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
 except Exception as e:
     st.error(f"An error occurred: {e}")
@@ -36,7 +25,7 @@ def main():
         <style>
         .stButton>button {
             position: relative;
-            max-height: 30px;
+            max-height: 40px;
             min-width: 250px;
             padding: auto;
             margin: -3px -3px;
@@ -44,8 +33,7 @@ def main():
             border-radius: 10px ;
             # background-color: #4CAF50 ;
             color: white ;
-            font-size: 5px;
-            font-width: ;
+            font-size: 5px ;
             cursor: pointer;
             # box-sizing: border-box
 
@@ -67,6 +55,8 @@ def main():
         if "conversation_id" not in st.session_state:
             st.session_state.conversation_id = 1
 
+        chat = st.session_state.chat_history = []
+
         st.header("DarkGPT")
 
         # Define models
@@ -79,7 +69,7 @@ def main():
 
         # Sidebar (left side) - Display saved chat
         st.sidebar.write("Chat History")
-        c.execute("SELECT DISTINCT conversation_id FROM chat_history")
+        c.execute("SELECT DISTINCT conversation_id FROM chat_history ORDER BY conversation_id DESC")
         conversations = c.fetchall()
         for conv_id in conversations:
             c.execute("SELECT content FROM chat_history WHERE conversation_id=? AND role='bot' LIMIT 1", (conv_id[0],))
@@ -105,6 +95,9 @@ def main():
 
         # Listen for changes in user input and generate completion
         if user_input:
+            if user_input == "user":
+                with st.chat_message(chat["role"]):
+                    st.markdown(chat["content"])
             client = Client()
             response = client.chat.completions.create(
                 model=selected_model,
@@ -117,14 +110,21 @@ def main():
 
             # Store chat in the database
             for chat in st.session_state.chat_history:
-                c.execute("INSERT INTO chat_history VALUES (?, ?, ?)",
+                c.execute("INSERT INTO chat_history (conversation_id, role, content) VALUES (?, ?, ?)",
                           (st.session_state.conversation_id, chat["role"], chat["content"]))
             conn.commit()
 
-        # Display chat history
-        for chat in st.session_state.chat_history:
-            with st.chat_message(chat["role"]):
-                st.markdown(chat["content"])
+            for chat in st.session_state.chat_history:
+                # if chat["role"] == "user":
+                #     with st.chat_message(chat["role"]):
+                #         st.markdown(chat["content"])
+                if chat["role"] == "bot":
+                    with st.spinner('.......'):
+                        with st.chat_message(chat["role"]):
+                            st.markdown(chat["content"])
+
+
+
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
@@ -133,10 +133,15 @@ def main():
 def display_conversation(conversation_id):
     c.execute("SELECT * FROM chat_history WHERE conversation_id=?", (conversation_id,))
     chats = c.fetchall()
-    st.markdown(f"### Conversation {conversation_id}")
-    for chat in chats:
-        st.markdown(f"{chat[1]}")
-        st.markdown(f"{chat[2]}")
+    if not chats:
+        st.markdown(f"No conversation found for conversation ID {conversation_id}.")
+    else:
+        st.markdown(f"### Conversation {conversation_id}")
+        for chat in chats:
+            if len(chat) >= 4:
+                st.markdown(f"**{chat[1]}**: {chat[2]} ({chat[3]})")
+            else:
+                st.markdown(f"**{chat[1]}**: {chat[2]}")
 
 
 if __name__ == "__main__":
