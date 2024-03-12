@@ -16,13 +16,10 @@ try:
 except Exception as e:
     st.error(f"An error occurred: {e}")
 
-# Global variable for tracking last request time
-last_request_time = 0
-
 
 # Streamlit app
 def main():
-    global last_request_time
+
 
     # Apply custom CSS styles
     st.write(
@@ -69,6 +66,7 @@ def main():
         if st.sidebar.button("New Chat"):
             st.session_state.chat_history.clear()
             st.session_state.conversation_id += 1
+            st.subheader('new chat')
 
         # Sidebar (left side) - Display saved chat
         st.sidebar.write("Chat History")
@@ -96,12 +94,6 @@ def main():
         st.markdown("---")
         user_input = st.chat_input("Ask Anything ...")
 
-        # Rate limiting for GeminiProChat API
-        current_time = time.time()
-        if current_time - last_request_time < 2:  # Rate limit: 2 requests per second
-            time.sleep(2 - (current_time - last_request_time))
-        last_request_time = current_time
-
         # Listen for changes in user input and generate completion
         if user_input:
             client = Client()
@@ -109,7 +101,6 @@ def main():
                 model=selected_model,
                 messages=[{"role": "user", "content": user_input}],
             )
-
             bot_response = response.choices[0].message.content
 
             st.session_state.chat_history.append({"role": "user", "content": user_input})
