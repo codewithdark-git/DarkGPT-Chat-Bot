@@ -66,7 +66,7 @@ def main():
         if st.sidebar.button("New Chat"):
             st.session_state.chat_history.clear()
             st.session_state.conversation_id += 1
-            st.write_stream("New Chat")
+            st.subheader("New Chat")
 
         # Sidebar (left side) - Display saved chat
         st.sidebar.write("Chat History")
