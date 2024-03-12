@@ -109,6 +109,7 @@ def main():
                 model=selected_model,
                 messages=[{"role": "user", "content": user_input}],
             )
+
             bot_response = response.choices[0].message.content
 
             st.session_state.chat_history.append({"role": "user", "content": user_input})
