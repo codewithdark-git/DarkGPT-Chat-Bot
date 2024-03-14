@@ -58,7 +58,7 @@ def main():
         st.header("DarkGPT")
 
         # Define models
-        models = [ "gemini-pro", "pi", "airoboros-70b"]
+        models = ["gpt-3.5-turbo", "gpt-4-turbo", "gemini-pro", "pi", "airoboros-70b"]
 
         # Sidebar (left side) - New chat button
         if st.sidebar.button("New Chat"):
@@ -96,6 +96,7 @@ def main():
             client = Client()
             response = client.chat.completions.create(
                 model=selected_model,
+
                 messages=[{"role": "user", "content": user_input}],
             )
             bot_response = response.choices[0].message.content
